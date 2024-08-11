@@ -12,6 +12,10 @@ from flexmeasures.data.models.generic_assets import (
     GenericAsset as Asset,
     GenericAssetType as AssetType,
 )
+from flexmeasures.data.models.network_resources import (
+    NetworkResource,
+    NetworkResourceType
+)
 from flexmeasures.data.models.planning import Scheduler
 from flexmeasures.data.models.time_series import Sensor
 

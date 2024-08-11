@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from typing import Type
+
+from traitlets import Integer
 import isodate
 import json
 import yaml
@@ -42,6 +44,7 @@ from flexmeasures.data.scripts.data_gen import (
 from flexmeasures.data.services.data_sources import get_or_create_source
 from flexmeasures.data.services.forecasting import create_forecasting_jobs
 from flexmeasures.data.services.scheduling import make_schedule, create_scheduling_job
+from flexmeasures.data.services.opf import eflex_opf, eflex_pf
 from flexmeasures.data.services.users import create_user
 from flexmeasures.data.models.user import Account, AccountRole, RolesAccounts
 from flexmeasures.data.models.time_series import (
@@ -74,7 +77,12 @@ from flexmeasures.data.schemas.generic_assets import (
     GenericAssetSchema,
     GenericAssetTypeSchema,
 )
+from flexmeasures.data.schemas.network_resource import (
+    NetworkResourceSchema,
+    NetworkResourceTypeSchema,
+)
 from flexmeasures.data.models.generic_assets import GenericAsset, GenericAssetType
+from flexmeasures.data.models.network_resources import NetworkResource, NetworkResourceType
 from flexmeasures.data.models.user import User
 from flexmeasures.data.services.data_sources import (
     get_source_or_none,
@@ -93,7 +101,6 @@ from timely_beliefs import BeliefsDataFrame
 @click.group("add")
 def fm_add_data():
     """FlexMeasures: Add data."""
-
 
 @fm_add_data.command("sources")
 @click.option(
@@ -321,7 +328,7 @@ def add_sensor(**args):
         )
         args["event_resolution"] = isodate_event_resolution
     check_errors(SensorSchema().validate(args))
-
+    
     sensor = Sensor(**args)
     if not isinstance(attributes, dict):
         click.secho("Attributes should be a dict.", **MsgStyle.ERROR)
@@ -362,6 +369,27 @@ def add_asset_type(**kwargs):
         **MsgStyle.SUCCESS,
     )
     click.secho("You can now assign assets to it.", **MsgStyle.SUCCESS)
+
+
+@fm_add_data.command("network-resource-type")
+@with_appcontext
+@click.option("--name", required=True)
+@click.option(
+    "--description",
+    type=str,
+    help="Description (useful to explain acronyms, for example).",
+)
+def add_network_resource_type(**kwargs):
+    """Add an network resource type."""
+    check_errors(NetworkResourceTypeSchema().validate(kwargs))
+    generic_network_resource_type = NetworkResourceType(**kwargs)
+    db.session.add(generic_network_resource_type)
+    db.session.commit()
+    click.secho(
+        f"Successfully created network resource type with ID {generic_network_resource_type.id}.",
+        **MsgStyle.SUCCESS,
+    )
+    click.secho("You can now assign network resources to it.", **MsgStyle.SUCCESS)
 
 
 @fm_add_data.command("asset", cls=DeprecatedOptionsCommand)
@@ -422,6 +450,73 @@ def add_asset(**args):
     )
     click.secho("You can now assign sensors to it.", **MsgStyle.SUCCESS)
 
+
+@fm_add_data.command("network-resource", cls=DeprecatedOptionsCommand)
+@with_appcontext
+@click.option("--name", required=True)
+@click.option(
+    "--account",
+    "--account-id",
+    "account_id",
+    type=int,
+    required=False,
+    cls=DeprecatedOption,
+    deprecated=["--account-id"],
+    preferred="--account",
+    help="Add network resource to this account. Follow up with the account's ID. If not set, the asset will become public (which makes it accessible to all users).",
+)
+@click.option(
+    "--network-resource-type",
+    "--network-resource-type-id",
+    "network_resource_type_id",
+    required=True,
+    type=int,
+    cls=DeprecatedOption,
+    deprecated=["--network-resource-type-id"],
+    preferred="--network-resource-type",
+    help="Network Resource type to assign to this network resource",
+)
+@click.option(
+    "--attributes",
+    required=False,
+    type=str,
+    default="{}",
+    help='Additional attributes. Passed as JSON string, should be a dict. Hint: Currently, for sensors that measure power, use {"capacity_in_mw": 10} to set a capacity of 10 MW',
+)
+def add_network_resource(**args):
+    """Add a network resource."""
+    check_errors(NetworkResourceSchema().validate(args))
+    
+    try:
+        attributes = json.loads(args["attributes"])
+    except json.decoder.JSONDecodeError as jde:
+        click.secho(
+            f"Error decoding --attributes. Please check your JSON: {jde}",
+            **MsgStyle.ERROR,
+        )
+        raise click.Abort()
+    
+    del args["attributes"]  # not part of schema
+
+    if not isinstance(attributes, dict):
+        click.secho("Attributes should be a dict.", **MsgStyle.ERROR)
+        raise click.Abort()
+    
+    print(args)
+    
+    network_resource = NetworkResource(**args)
+    if network_resource.account_id is None:
+        click.secho(
+            "Creating a PUBLIC network resource, as no --account-id is given ...",
+            **MsgStyle.WARN,
+        )
+    network_resource.attributes = attributes
+    db.session.add(network_resource)
+    db.session.commit()
+    click.secho(
+        f"Successfully created network resource with ID {network_resource.id}.", **MsgStyle.SUCCESS
+    )
+    
 
 @fm_add_data.command("initial-structure")
 @with_appcontext
@@ -697,6 +792,7 @@ def add_beliefs(
         filter_by_column=filter_by_column,
         **kwargs,
     )
+
     duplicate_rows = bdf.index.duplicated(keep="first")
     if any(duplicate_rows) > 0:
         click.secho(
@@ -1577,6 +1673,208 @@ def add_schedule_process(
         )
         if success:
             click.secho("New schedule is stored.", **MsgStyle.SUCCESS)
+
+
+import numpy as np
+@fm_add_data.command("opf")
+@click.option(
+    "--load-id",
+    "load",
+    multiple=True,
+    type=int,
+    required=True,
+    help="Can be multiple loads. Should be a power sensor. Follow up with the sensor's ID.",
+)
+@click.option(
+    "--battery-id",
+    "battery",
+    multiple=True, 
+    type=int,
+    required=True,
+    help="Can be multiple battery packs. Should be a power sensor. Follow up with the sensor's ID.",
+)
+@click.option(
+    "--network",
+    "network",
+    multiple=True, 
+    type=int,
+    required=True,
+    help="Network of the schedule. Follow up with the network items' ID.",
+)
+@click.option(
+    "--start",
+    "start",
+    type=AwareDateTimeField(format="iso"),
+    required=True,
+    help="Schedule starts at this datetime. Follow up with a timezone-aware datetime in ISO 6801 format.",
+)
+@click.option(
+    "--duration",
+    "duration",
+    type=DurationField(),
+    required=True,
+    help="Duration of schedule, after --start. Follow up with a duration in ISO 6801 format, e.g. PT1H (1 hour) or PT45M (45 minutes).",
+)
+def add_opf(    
+    load: int,
+    battery: int,
+    network: int,
+    start: datetime,
+    duration: datetime
+):
+    """ OPF Description """
+    # print("load", load)
+    # print("battery", battery)
+    # print("network", network)
+    # print("start", start)
+    # print("duration", duration)
+  
+    # # Checking if every sensor has the same event resolution (1 minute, 1 hour, etc)
+    # for iter in range(len(load_sensor)):
+    #     assets_on_network.append(load_sensor[iter].generic_asset_id)
+    #     assert load_sensor[0].event_resolution == load_sensor[iter].event_resolution, \
+    #         "Load sensors do no have the same event resolution"
+    # for iter in range(len(battery_sensor)):
+    #     assets_on_network.append(battery_sensor[iter].generic_asset_id)
+    #     assert battery_sensor[0].event_resolution == battery_sensor[iter].event_resolution, \
+    #         "Battery sensors do no have the same event resolution"
+    # assert load_sensor[0].event_resolution == battery_sensor[0].event_resolution, \
+    #     "Load and Battery sensors do not have the same event resolution"
+
+    # # Creating the adjacency matrix (FIX THIS WITH LINES/BUSES INFORMATION)
+    # Adj_matrix = np.zeros((len(buses_on_network), len(buses_on_network)))
+    # for line in range(len(buses_on_network)):
+    #     for column in range(line, len(buses_on_network)):
+    #         if column != line:
+    #             Adj_matrix[line][column] = 1
+    #             Adj_matrix[column][line] = 1
+    
+    lines_on_network = []
+    buses_on_network = []
+    for resource in network:
+        if(NetworkResource.query.get(resource).network_resource_type_id == 1):
+            buses_on_network.append(NetworkResource.query.get(resource).id)
+        if(NetworkResource.query.get(resource).network_resource_type_id == 0):
+            lines_on_network.append(NetworkResource.query.get(resource).id)
+
+    scheduling_kwargs = dict(
+        start       = start,
+        end         = start + duration,
+        load        = load,
+        battery     = battery,
+        lines       = lines_on_network,
+        buses       = buses_on_network,
+        resolution  = GenericAsset.query.get(battery[0]).sensors[0].event_resolution,
+        belief_time = server_now(),
+    )
+
+    success = eflex_opf(**scheduling_kwargs)
+    if success:
+        print("OPF done with success")
+        pass
+
+    pass
+
+
+@fm_add_data.command("pf")
+@click.option(
+    "--load-id",
+    "load",
+    multiple=True,
+    type=int,
+    required=False,
+    help="Can be multiple loads. Should be a power sensor. Follow up with the sensor's ID.",
+)
+@click.option(
+    "--battery-id",
+    "battery",
+    multiple=True, 
+    type=int,
+    required=True,
+    help="Can be multiple battery packs. Should be a power sensor. Follow up with the sensor's ID.",
+)
+@click.option(
+    "--network",
+    "network",
+    multiple=True, 
+    type=int,
+    required=True,
+    help="Network of the schedule. Follow up with the network items' ID.",
+)
+@click.option(
+    "--start",
+    "start",
+    type=AwareDateTimeField(format="iso"),
+    required=True,
+    help="Schedule starts at this datetime. Follow up with a timezone-aware datetime in ISO 6801 format.",
+)
+@click.option(
+    "--duration",
+    "duration",
+    type=DurationField(),
+    required=True,
+    help="Duration of schedule, after --start. Follow up with a duration in ISO 6801 format, e.g. PT1H (1 hour) or PT45M (45 minutes).",
+)
+def add_opf(    
+    load: GenericAsset,
+    battery: GenericAsset,
+    network: int,
+    start: datetime,
+    duration: datetime
+):
+    """ PF Description """
+    # print("load", load)
+    # print("battery", battery)
+    # print("network", network)
+    # print("start", start)
+    # print("duration", duration)
+    
+    # Checking if every sensor has the same event resolution (1 minute, 1 hour, etc)
+    # for iter in range(len(load_sensor)):
+    #     assets_on_network.append(load_sensor[iter].generic_asset_id)
+    #     assert load_sensor[0].event_resolution == load_sensor[iter].event_resolution, \
+    #         "Load sensors do no have the same event resolution"
+    # for iter in range(len(battery_sensor)):
+    #     assets_on_network.append(battery_sensor[iter].generic_asset_id)
+    #     assert battery_sensor[0].event_resolution == battery_sensor[iter].event_resolution, \
+    #         "Battery sensors do no have the same event resolution"
+    # assert load_sensor[0].event_resolution == battery_sensor[0].event_resolution, \
+    #     "Load and Battery sensors do not have the same event resolution"
+
+    # Acknowledging the buses in the network/lines
+    lines_on_network = []
+    buses_on_network = []
+    for resource in network:
+        if(NetworkResource.query.get(resource).network_resource_type_id == 1):
+            buses_on_network.append(NetworkResource.query.get(resource).id)
+        if(NetworkResource.query.get(resource).network_resource_type_id == 0):
+            lines_on_network.append(NetworkResource.query.get(resource).id)
+    # print(buses_on_network, lines_on_network)        
+
+    # # Creating the adjacency matrix (FIX THIS WITH LINES/BUSES INFORMATION)
+    # Adj_matrix = np.zeros((len(buses_on_network), len(buses_on_network)))
+    # for line in lines_on_network:
+    #     l = NetworkResource.query.get(line).attributes.get("from_bus")
+    #     c = NetworkResource.query.get(line).attributes.get("to_bus")
+    #     Adj_matrix[l][c] = 1
+    #     Adj_matrix[c][l] = 1
+    # # print(Adj_matrix)
+
+    scheduling_kwargs = dict(
+        start       = start,
+        end         = start + duration,
+        load        = load,
+        battery     = battery,
+        lines       = lines_on_network,
+        buses       = buses_on_network,
+        resolution  = GenericAsset.query.get(battery[0]).sensors[0].event_resolution,
+        belief_time = server_now()
+    )
+
+    success = eflex_pf(**scheduling_kwargs)
+    if success:
+        print("PF done with success")
+        pass
 
 
 @fm_add_data.command("report")

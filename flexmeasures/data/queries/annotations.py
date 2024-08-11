@@ -8,6 +8,7 @@ from sqlalchemy.orm import Query
 from flexmeasures.data.models.annotations import (
     Annotation,
     GenericAssetAnnotationRelationship,
+    NetworkResourceAnnotationRelationship,
 )
 from flexmeasures.data.models.data_sources import DataSource
 
@@ -46,3 +47,39 @@ def query_asset_annotations(
             Annotation.type == annotation_type,
         )
     return query
+
+def query_network_resource_annotations(
+    network_resource_id: int,
+    annotations_after: datetime | None = None,
+    annotations_before: datetime | None = None,
+    sources: list[DataSource] | None = None,
+    annotation_type: str | None = None,
+) -> Query:
+    """Match annotations assigned to the given network resource."""
+    query = (
+        select(Annotation)
+        .join(NetworkResourceAnnotationRelationship)
+        .filter(
+            NetworkResourceAnnotationRelationship.generic_network_resource_id == network_resource_id,
+            NetworkResourceAnnotationRelationship.annotation_id == Annotation.id,
+        )
+    )
+
+    if annotations_after is not None:
+        query = query.filter(
+            Annotation.end > annotations_after,
+        )
+    if annotations_before is not None:
+        query = query.filter(
+            Annotation.start < annotations_before,
+        )
+    if sources:
+        query = query.filter(
+            Annotation.source.in_(sources),
+        )
+    if annotation_type is not None:
+        query = query.filter(
+            Annotation.type == annotation_type,
+        )
+    return query
+

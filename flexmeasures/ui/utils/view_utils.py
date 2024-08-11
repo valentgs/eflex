@@ -83,6 +83,9 @@ def render_flexmeasures_template(html_filename: str, **variables):
     elif "asset" in variables:
         asset = variables["asset"]
         options["downloadFileName"] = f"asset-{asset.id}-{asset.name}"
+    elif "network_resource" in variables:
+        network_resource = variables["network_resource"]
+        options["downloadFileName"] = f"network-resource-{network_resource.id}-{network_resource.name}"
     variables["chart_options"] = json.dumps(options)
 
     variables["menu_logo"] = current_app.config.get("FLEXMEASURES_MENU_LOGO_PATH")
@@ -90,7 +93,9 @@ def render_flexmeasures_template(html_filename: str, **variables):
 
     if "asset" in variables:
         variables["breadcrumb_info"] = get_breadcrumb_info(asset)
-
+    if "network_resource" in variables:
+        variables["breadcrumb_info"] = get_breadcrumb_info(network_resource)
+    
     return render_template(html_filename, **variables)
 
 

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% set active_page = "networkresources" %}
+
+{% block title %} Network Resources {% endblock %}
+
+{% block divs %}
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-2 on-top-md">
+      <div class="header-action-button mt-3">
+        <div>
+          {% if user_can_create_network_resources %}
+          <form action="/networkresources/new" method="get">
+            <button class="btn btn-sm btn-success mb-2 create-button" type="submit">Create new network resource</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card">
+        <h3>Network Resources overview
+          {% if account %}
+            for account {{ account.name }}
+          {% endif %}
+        </h3>
+        <div class="table-responsive">
+          <table class="table table-striped paginate nav-on-click" title="View this asset">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Network Resource ID</th>
+                <th scope="col">Account</th>
+                <th class="col">Type</th>
+                <th class="d-none">URL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for network_resource in network_resources: %}
+              
+              <tr>
+                <td>
+                    {{ network_resource.name }}
+                </td>
+                <td>
+                    {{ network_resource.id }}
+                </td>
+                <td>
+                    {% if network_resource.owner %}
+                    <a href="/accounts/{{ network_resource.owner.id }}" title="View this account">{{ network_resource.owner.name }}</a>
+                    {% else %}
+                    PUBLIC
+                    {% endif %}
+                </td>
+                
+                <td>
+                    {{ network_resource.network_resource_type.name }}
+                </td>
+                <td class="d-none">
+                    /networkresources/{{ network_resource.id }}
+                </td>
+              </tr>
+              {% endfor %} 
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block paginate_tables_script %} {{ super() }} {% endblock %}
+
+{% endblock %}
+
+

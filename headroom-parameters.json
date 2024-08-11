@@ -1,0 +1,6 @@
+
+{
+    'input' : [{'name' : 'grid connection capacity','sensor' : 7},
+               {'name' : 'PV', 'sensor' : 3}],
+    'output' : [{'sensor' : 8}]
+}

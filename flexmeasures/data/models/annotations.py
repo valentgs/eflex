@@ -162,6 +162,23 @@ class GenericAssetAnnotationRelationship(db.Model):
     )
 
 
+class NetworkResourceAnnotationRelationship(db.Model):
+    """Links annotations to network resources."""
+    
+    __tablename__ = "annotations_network_resources"
+
+    id = db.Column(db.Integer(), primary_key=True)
+    network_resource_id = db.Column(db.Integer, db.ForeignKey("network_resource.id"))
+    annotation_id = db.Column(db.Integer, db.ForeignKey("annotation.id"))
+    __table_args__ = (
+        db.UniqueConstraint(
+            "annotation_id",
+            "network_resource_id",
+            name="annotations_network_resources_annotation_id_key",
+        ),
+    )
+
+
 class SensorAnnotationRelationship(db.Model):
     """Links annotations to sensors."""
 

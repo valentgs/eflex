@@ -1,0 +1,7 @@
+
+{
+   'weights' : {
+       'grid connection capacity' : 1.0,
+       'PV' : -1.0,
+   }
+}

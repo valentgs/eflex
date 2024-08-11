@@ -1,0 +1,5 @@
+
+{
+    'input' : [{'sensor' : 5}],
+    'output' : [{'sensor' : 10}]
+}

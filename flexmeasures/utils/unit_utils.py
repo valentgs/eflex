@@ -34,6 +34,7 @@ ur.load_definitions(custom_template)
 ur.default_format = "~P"  # short pretty
 ur.define("percent = 1 / 100 = %")
 ur.define("permille = 1 / 1000 = ‰")
+ur.define("VAr = V * A")
 
 
 PREFERRED_UNITS = [
@@ -42,6 +43,7 @@ PREFERRED_UNITS = [
     "kg",
     "m/h",
     "W",
+    "VAr",
     "N",
     "Wh",
     "m**2",
