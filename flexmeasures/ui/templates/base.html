@@ -37,7 +37,7 @@
     {% if active_page == "tasks" %}
     <link href="{{ url_for('rq_dashboard.static', filename='css/main.css') }}" rel="stylesheet">
     <link href="{{ url_for('flexmeasures_ui.static', filename='css/external/rq-dashboard-bootstrap.min.css') }}" rel="stylesheet" />
-    {% elif active_page in ("assets", "users", "accounts", "networkresources") %}
+    {% elif active_page in ("assets", "users", "accounts", "networkresources", "networks") %}
     <link href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/buttons/3.0.2/css/buttons.bootstrap5.min.css" rel="stylesheet"/>
     {% endif %}
@@ -89,18 +89,18 @@
                         Tasks
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="tasksDropdown">
-                    {% for queue in queue_names %}
+                        {% for queue in queue_names %}
                         <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
-                        <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/tasks/0/view/jobs/{{ queue }}/started/10/1" {% endif %}>
-                            {{ queue | capitalize }}
-                        </a>
+                            <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/tasks/0/view/jobs/{{ queue }}/started/10/1" {% endif %}>
+                                {{ queue | capitalize }}
+                            </a>
                         </li>
-                    {% endfor %}
-                    <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
-                        <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/tasks/" {% endif %}>
-                            Overview
-                        </a>
-                    </li>
+                        {% endfor %}
+                        <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
+                            <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/tasks/" {% endif %}>
+                                Overview
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 {% else %}

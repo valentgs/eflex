@@ -81,8 +81,12 @@ from flexmeasures.data.schemas.network_resource import (
     NetworkResourceSchema,
     NetworkResourceTypeSchema,
 )
+from flexmeasures.data.schemas.networks import (
+    NetworkSchema,
+)
 from flexmeasures.data.models.generic_assets import GenericAsset, GenericAssetType
 from flexmeasures.data.models.network_resources import NetworkResource, NetworkResourceType
+from flexmeasures.data.models.networks import Network
 from flexmeasures.data.models.user import User
 from flexmeasures.data.services.data_sources import (
     get_source_or_none,
@@ -453,7 +457,11 @@ def add_asset(**args):
 
 @fm_add_data.command("network-resource", cls=DeprecatedOptionsCommand)
 @with_appcontext
-@click.option("--name", required=True)
+@click.option(
+    "--name",
+    required=True,
+    type=str,
+    help="Name of the network resource",)
 @click.option(
     "--account",
     "--account-id",
@@ -515,6 +523,34 @@ def add_network_resource(**args):
     db.session.commit()
     click.secho(
         f"Successfully created network resource with ID {network_resource.id}.", **MsgStyle.SUCCESS
+    )
+
+
+@fm_add_data.command("network", cls=DeprecatedOptionsCommand)
+@with_appcontext
+@click.option(
+    "--name", 
+    required=True,
+    type=str,
+    help="Name of the network",)
+@click.option(
+    "--network-resources",
+    "network_resources",
+    required=True,
+    multiple=True,
+    type=int,
+    help="Network Resources assigned to this network",
+)
+def add_network(**args):
+    """Add a network (a set of network resources)."""
+    check_errors(NetworkSchema().validate(args))
+
+    network = Network(**args)
+    
+    db.session.add(network)
+    db.session.commit()
+    click.secho(
+        f"Successfully created network with ID {network.id}.", **MsgStyle.SUCCESS
     )
     
 

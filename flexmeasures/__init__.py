@@ -16,6 +16,9 @@ from flexmeasures.data.models.network_resources import (
     NetworkResource,
     NetworkResourceType
 )
+from flexmeasures.data.models.networks import (
+    Network
+)
 from flexmeasures.data.models.planning import Scheduler
 from flexmeasures.data.models.time_series import Sensor
 

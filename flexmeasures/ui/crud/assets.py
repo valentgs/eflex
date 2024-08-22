@@ -354,7 +354,7 @@ class AssetCrudUI(FlaskView):
         """POST to /assets/<id>, where id can be 'create' (and thus a new asset is made from POST data)
         Most of the code deals with creating a user for the asset if no existing is chosen.
         """
-
+        print("BBBBBBBBBBBBBBBBBBBBBBBB")
         asset: GenericAsset = None
         error_msg = ""
 

@@ -17,8 +17,12 @@ from sqlalchemy import delete, func, select
 from flexmeasures.data import db
 from flexmeasures.data.models.user import Account, AccountRole, RolesAccounts, User
 from flexmeasures.data.models.generic_assets import GenericAsset
+from flexmeasures.data.models.network_resources import NetworkResource
+from flexmeasures.data.models.networks import Network
 from flexmeasures.data.models.time_series import Sensor, TimedBelief
 from flexmeasures.data.schemas import AwareDateTimeField, SensorIdField, AssetIdField
+from flexmeasures.data.schemas.network_resource import NetworkResourceIdField
+from flexmeasures.data.schemas.networks import NetworkIdField
 from flexmeasures.data.services.users import find_user_by_email, delete_user
 from flexmeasures.cli.utils import (
     abort,
@@ -149,6 +153,43 @@ def delete_asset_and_data(asset: GenericAsset, force: bool):
     db.session.execute(delete(GenericAsset).filter_by(id=asset.id))
     db.session.commit()
 
+
+@fm_delete_data.command("network_resource")
+@with_appcontext
+@click.option("--id", "network_resource", type=NetworkResourceIdField())
+@click.option(
+    "--force/--no-force", default=False, help="Skip warning about consequences."
+)
+def delete_network_resource(network_resource: NetworkResource, force: bool):
+    """
+    Delete a network resource.
+    """
+    if not force:
+        prompt = (
+            f"Delete {network_resource.__repr__()}?"
+        )
+        click.confirm(prompt, abort=True)
+    db.session.execute(delete(NetworkResource).filter_by(id=network_resource.id))
+    db.session.commit()
+
+@fm_delete_data.command("network")
+@with_appcontext
+@click.option("--id", "network", type=NetworkIdField())
+@click.option(
+    "--force/--no-force", default=False, help="Skip warning about consequences."
+)
+def delete_network(network: Network, force: bool):
+    """
+    Delete a network.
+    """
+    print(delete,)
+    if not force:
+        prompt = (
+            f"Delete {network.__repr__()}?"
+        )
+        click.confirm(prompt, abort=True)
+    db.session.execute(delete(Network).filter_by(id=network.id))
+    db.session.commit()
 
 @fm_delete_data.command("structure")
 @with_appcontext

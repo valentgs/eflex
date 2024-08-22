@@ -7,6 +7,7 @@ from flask import url_for, current_app, request
 from flask_classful import FlaskView, route
 from flask_wtf import FlaskForm
 from flask_security import login_required, current_user
+import flexmeasures
 from webargs.flaskparser import use_kwargs
 from wtforms import StringField, DecimalField, SelectField
 from wtforms.validators import DataRequired, optional
@@ -35,6 +36,8 @@ from flexmeasures.data.services.sensors import (
     build_sensor_status_data,
     build_asset_jobs_data,
 )
+
+from flexmeasures.api.v3_0.network_resources import NetworkResourceAPI
 
 
 """
@@ -172,7 +175,7 @@ def user_can_delete(network_resource) -> bool:
     return True
 
 
-def get_network_resources_by_account(account_id: int | str | None) -> list[GenericAsset]:
+def get_network_resources_by_account(account_id: int | str | None) -> list[NetworkResource]:
     if account_id is not None:
         get_network_resources_response = InternalApi().get(
             url_for("NetworkResourceAPI:index"), query={"account_id": account_id}

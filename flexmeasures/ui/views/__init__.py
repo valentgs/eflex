@@ -9,7 +9,9 @@ from flexmeasures.ui.views.control import control_view  # noqa: F401
 from flexmeasures.ui.views.logged_in_user import (  # noqa: F401  # noqa: F401
     logged_in_user_view,
 )
-
+from flexmeasures.ui.views.opf import (  # noqa: F401  # noqa: F401
+    opf_view,
+)
 
 @flexmeasures_ui.route("/docs")
 def docs_view():

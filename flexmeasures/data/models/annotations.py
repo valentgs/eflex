@@ -178,6 +178,21 @@ class NetworkResourceAnnotationRelationship(db.Model):
         ),
     )
 
+class NetworkAnnotationRelationship(db.Model):
+    """Links annotations to network resources."""
+    
+    __tablename__ = "annotations_networks"
+
+    id = db.Column(db.Integer(), primary_key=True)
+    network_resource_id = db.Column(db.Integer, db.ForeignKey("network.id"))
+    annotation_id = db.Column(db.Integer, db.ForeignKey("annotation.id"))
+    __table_args__ = (
+        db.UniqueConstraint(
+            "annotation_id",
+            "id",
+            name="annotations_networks_annotation_id_key",
+        ),
+    )
 
 class SensorAnnotationRelationship(db.Model):
     """Links annotations to sensors."""

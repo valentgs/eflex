@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import select
-from flexmeasures import Sensor, Asset, Account, NetworkResource
+from flexmeasures import Sensor, Asset, Account, NetworkResource, Network
 from flexmeasures.utils.flexmeasures_inflection import human_sorted
 from flask import url_for, current_app
 

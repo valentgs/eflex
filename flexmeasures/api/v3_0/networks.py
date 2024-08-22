@@ -12,26 +12,29 @@ from flexmeasures.auth.decorators import permission_required_for_context
 from flexmeasures.data import db
 from flexmeasures.data.models.user import Account
 from flexmeasures.data.models.generic_assets import GenericAsset
+from flexmeasures.data.models.networks import Network
 from flexmeasures.data.schemas import AwareDateTimeField
 from flexmeasures.data.schemas.generic_assets import GenericAssetSchema as AssetSchema
+from flexmeasures.data.schemas.networks import NetworkSchema
 from flexmeasures.api.common.schemas.generic_assets import AssetIdField
+from flexmeasures.api.common.schemas.networks import NetworkIdField
 from flexmeasures.api.common.schemas.users import AccountIdField
 from flexmeasures.utils.coding_utils import flatten_unique
 from flexmeasures.ui.utils.view_utils import set_session_variables
 
 
-asset_schema = AssetSchema()
-assets_schema = AssetSchema(many=True)
-partial_asset_schema = AssetSchema(partial=True, exclude=["account_id"])
+network_schema = NetworkSchema()
+networks_schema = NetworkSchema(many=True)
+partial_network_schema = NetworkSchema(partial=True, exclude=["account_id"])
 
 
-class AssetAPI(FlaskView):
+class NetworkAPI(FlaskView):
     """
     This API view exposes generic assets.
     Under development until it replaces the original Asset API.
     """
 
-    route_base = "/assets"
+    route_base = "/networks"
     trailing_slash = False
     decorators = [auth_required()]
 
@@ -47,7 +50,7 @@ class AssetAPI(FlaskView):
     @permission_required_for_context("read", ctx_arg_name="account")
     @as_json
     def index(self, account: Account):
-        """List all assets owned by a certain account.
+        """List all networks owned by a certain account.
 
         .. :quickref: Asset; Download asset list
 
@@ -80,16 +83,16 @@ class AssetAPI(FlaskView):
         :status 403: INVALID_SENDER
         :status 422: UNPROCESSABLE_ENTITY
         """
-        return assets_schema.dump(account.generic_assets), 200
+        return networks_schema.dump(account.networks), 200
 
     @route("/public", methods=["GET"])
     @as_json
     def public(self):
-        """Return all public assets.
+        """Return all public networks.
 
-        .. :quickref: Asset; Return all public assets.
+        .. :quickref: Network; Return all public networks.
 
-        This endpoint returns all public assets.
+        This endpoint returns all public networks.
 
         :reqheader Authorization: The authentication token
         :reqheader Content-Type: application/json
@@ -99,22 +102,22 @@ class AssetAPI(FlaskView):
         :status 401: UNAUTHORIZED
         :status 422: UNPROCESSABLE_ENTITY
         """
-        assets = db.session.scalars(
-            select(GenericAsset).filter(GenericAsset.account_id.is_(None))
+        networks = db.session.scalars(
+            select(Network).filter(Network.account_id.is_(None))
         ).all()
-        return assets_schema.dump(assets), 200
+        return networks_schema.dump(networks), 200
 
     @route("", methods=["POST"])
     @permission_required_for_context(
         "create-children", ctx_loader=AccountIdField.load_current
     )
-    @use_args(asset_schema)
-    def post(self, asset_data: dict):
-        """Create new asset.
+    @use_args(network_schema)
+    def post(self, network_data: dict):
+        """Create new network.
 
-        .. :quickref: Asset; Create a new asset
+        .. :quickref: Network; Create a new network
 
-        This endpoint creates a new asset.
+        This endpoint creates a new network.
 
         **Example request**
 
@@ -139,23 +142,22 @@ class AssetAPI(FlaskView):
         :status 401: UNAUTHORIZED
         :status 403: INVALID_SENDER
         :status 422: UNPROCESSABLE_ENTITY
-        """
-        print("AAAAAAAAAAAAAAAAA")
-        asset = GenericAsset(**asset_data)
-        db.session.add(asset)
+        """        
+        network = Network(**network_data)
+        db.session.add(network)
         db.session.commit()
-        return asset_schema.dump(asset), 201
+        return network_schema.dump(network), 201
 
     @route("/<id>", methods=["GET"])
-    @use_kwargs({"asset": AssetIdField(data_key="id")}, location="path")
-    @permission_required_for_context("read", ctx_arg_name="asset")
+    @use_kwargs({"network": NetworkIdField(data_key="id")}, location="path")
+    @permission_required_for_context("read", ctx_arg_name="network")
     @as_json
-    def fetch_one(self, id, asset):
-        """Fetch a given asset.
+    def fetch_one(self, id, network):
+        """Fetch a given network.
 
-        .. :quickref: Asset; Get an asset
+        .. :quickref: Network; Get an network
 
-        This endpoint gets an asset.
+        This endpoint gets a network.
 
         **Example response**
 
@@ -179,20 +181,20 @@ class AssetAPI(FlaskView):
         :status 403: INVALID_SENDER
         :status 422: UNPROCESSABLE_ENTITY
         """
-        return asset_schema.dump(asset), 200
+        return network_schema.dump(network), 200
 
     @route("/<id>", methods=["PATCH"])
-    @use_args(partial_asset_schema)
-    @use_kwargs({"db_asset": AssetIdField(data_key="id")}, location="path")
-    @permission_required_for_context("update", ctx_arg_name="db_asset")
+    @use_args(partial_network_schema)
+    @use_kwargs({"db_network": NetworkIdField(data_key="id")}, location="path")
+    @permission_required_for_context("update", ctx_arg_name="db_network")
     @as_json
-    def patch(self, asset_data: dict, id: int, db_asset: GenericAsset):
-        """Update an asset given its identifier.
+    def patch(self, network_data: dict, id: int, db_network: Network):
+        """Update an network given its identifier.
 
-        .. :quickref: Asset; Update an asset
+        .. :quickref: Network; Update an network
 
-        This endpoint sets data for an existing asset.
-        Any subset of asset fields can be sent.
+        This endpoint sets data for an existing network.
+        Any subset of network fields can be sent.
 
         The following fields are not allowed to be updated:
         - id
@@ -210,7 +212,7 @@ class AssetAPI(FlaskView):
 
         **Example response**
 
-        The whole asset is returned in the response:
+        The whole network is returned in the response:
 
         .. sourcecode:: json
 
@@ -232,22 +234,22 @@ class AssetAPI(FlaskView):
         :status 403: INVALID_SENDER
         :status 422: UNPROCESSABLE_ENTITY
         """
-        for k, v in asset_data.items():
-            setattr(db_asset, k, v)
-        db.session.add(db_asset)
+        for k, v in network_data.items():
+            setattr(db_network, k, v)
+        db.session.add(db_network)
         db.session.commit()
-        return asset_schema.dump(db_asset), 200
+        return network_schema.dump(db_network), 200
 
     @route("/<id>", methods=["DELETE"])
-    @use_kwargs({"asset": AssetIdField(data_key="id")}, location="path")
-    @permission_required_for_context("delete", ctx_arg_name="asset")
+    @use_kwargs({"network": NetworkIdField(data_key="id")}, location="path")
+    @permission_required_for_context("delete", ctx_arg_name="network")
     @as_json
-    def delete(self, id: int, asset: GenericAsset):
-        """Delete an asset given its identifier.
+    def delete(self, id: int, network: Network):
+        """Delete an network given its identifier.
 
-        .. :quickref: Asset; Delete an asset
+        .. :quickref: Network; Delete a network
 
-        This endpoint deletes an existing asset, as well as all sensors and measurements recorded for it.
+        This endpoint deletes an existing network, as well as all sensors and measurements recorded for it.
 
         :reqheader Authorization: The authentication token
         :reqheader Content-Type: application/json
@@ -258,64 +260,64 @@ class AssetAPI(FlaskView):
         :status 403: INVALID_SENDER
         :status 422: UNPROCESSABLE_ENTITY
         """
-        asset_name = asset.name
-        db.session.execute(delete(GenericAsset).filter_by(id=asset.id))
+        network_name = network.name
+        db.session.execute(delete(Network).filter_by(id=network.id))
         db.session.commit()
-        current_app.logger.info("Deleted asset '%s'." % asset_name)
+        current_app.logger.info("Deleted network '%s'." % network_name)
         return {}, 204
 
-    @route("/<id>/chart", strict_slashes=False)  # strict on next version? see #1014
-    @use_kwargs(
-        {"asset": AssetIdField(data_key="id")},
-        location="path",
-    )
-    @use_kwargs(
-        {
-            "event_starts_after": AwareDateTimeField(format="iso", required=False),
-            "event_ends_before": AwareDateTimeField(format="iso", required=False),
-            "beliefs_after": AwareDateTimeField(format="iso", required=False),
-            "beliefs_before": AwareDateTimeField(format="iso", required=False),
-            "include_data": fields.Boolean(required=False),
-            "dataset_name": fields.Str(required=False),
-            "height": fields.Str(required=False),
-            "width": fields.Str(required=False),
-        },
-        location="query",
-    )
-    @permission_required_for_context("read", ctx_arg_name="asset")
-    def get_chart(self, id: int, asset: GenericAsset, **kwargs):
-        """GET from /assets/<id>/chart
+    # @route("/<id>/chart", strict_slashes=False)  # strict on next version? see #1014
+    # @use_kwargs(
+    #     {"asset": AssetIdField(data_key="id")},
+    #     location="path",
+    # )
+    # @use_kwargs(
+    #     {
+    #         "event_starts_after": AwareDateTimeField(format="iso", required=False),
+    #         "event_ends_before": AwareDateTimeField(format="iso", required=False),
+    #         "beliefs_after": AwareDateTimeField(format="iso", required=False),
+    #         "beliefs_before": AwareDateTimeField(format="iso", required=False),
+    #         "include_data": fields.Boolean(required=False),
+    #         "dataset_name": fields.Str(required=False),
+    #         "height": fields.Str(required=False),
+    #         "width": fields.Str(required=False),
+    #     },
+    #     location="query",
+    # )
+    # @permission_required_for_context("read", ctx_arg_name="asset")
+    # def get_chart(self, id: int, asset: GenericAsset, **kwargs):
+    #     """GET from /networks/<id>/chart
 
-        .. :quickref: Chart; Download a chart with time series
-        """
-        # Store selected time range as session variables, for a consistent UX across UI page loads
-        set_session_variables("event_starts_after", "event_ends_before")
-        return json.dumps(asset.chart(**kwargs))
+    #     .. :quickref: Chart; Download a chart with time series
+    #     """
+    #     # Store selected time range as session variables, for a consistent UX across UI page loads
+    #     set_session_variables("event_starts_after", "event_ends_before")
+    #     return json.dumps(asset.chart(**kwargs))
 
-    @route(
-        "/<id>/chart_data", strict_slashes=False
-    )  # strict on next version? see #1014
-    @use_kwargs(
-        {"asset": AssetIdField(data_key="id")},
-        location="path",
-    )
-    @use_kwargs(
-        {
-            "event_starts_after": AwareDateTimeField(format="iso", required=False),
-            "event_ends_before": AwareDateTimeField(format="iso", required=False),
-            "beliefs_after": AwareDateTimeField(format="iso", required=False),
-            "beliefs_before": AwareDateTimeField(format="iso", required=False),
-            "most_recent_beliefs_only": fields.Boolean(required=False),
-        },
-        location="query",
-    )
-    @permission_required_for_context("read", ctx_arg_name="asset")
-    def get_chart_data(self, id: int, asset: GenericAsset, **kwargs):
-        """GET from /assets/<id>/chart_data
+    # @route(
+    #     "/<id>/chart_data", strict_slashes=False
+    # )  # strict on next version? see #1014
+    # @use_kwargs(
+    #     {"asset": AssetIdField(data_key="id")},
+    #     location="path",
+    # )
+    # @use_kwargs(
+    #     {
+    #         "event_starts_after": AwareDateTimeField(format="iso", required=False),
+    #         "event_ends_before": AwareDateTimeField(format="iso", required=False),
+    #         "beliefs_after": AwareDateTimeField(format="iso", required=False),
+    #         "beliefs_before": AwareDateTimeField(format="iso", required=False),
+    #         "most_recent_beliefs_only": fields.Boolean(required=False),
+    #     },
+    #     location="query",
+    # )
+    # @permission_required_for_context("read", ctx_arg_name="asset")
+    # def get_chart_data(self, id: int, asset: GenericAsset, **kwargs):
+    #     """GET from /networks/<id>/chart_data
 
-        .. :quickref: Chart; Download time series for use in charts
+    #     .. :quickref: Chart; Download time series for use in charts
 
-        Data for use in charts (in case you have the chart specs already).
-        """
-        sensors = flatten_unique(asset.sensors_to_show)
-        return asset.search_beliefs(sensors=sensors, as_json=True, **kwargs)
+    #     Data for use in charts (in case you have the chart specs already).
+    #     """
+    #     sensors = flatten_unique(asset.sensors_to_show)
+    #     return asset.search_beliefs(sensors=sensors, as_json=True, **kwargs)

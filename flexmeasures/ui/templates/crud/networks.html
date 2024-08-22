@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% set active_page = "networkresources" %}
+{% set active_page = "networks" %}
 
-{% block title %} Network Resources {% endblock %}
+{% block title %} Network listing {% endblock %}
 
 {% block divs %}
 
@@ -11,9 +11,9 @@
     <div class="col-md-2 on-top-md">
       <div class="header-action-button mt-3">
         <div>
-          {% if user_can_create_network_resources %}
-          <form action="/networkresources/new" method="get">
-            <button class="btn btn-sm btn-success mb-2 create-button" type="submit">Create new network resource</button>
+          {% if user_can_create_networks %}
+          <form action="/networks/new" method="get">
+            <button class="btn btn-sm btn-success mb-2 create-button" type="submit">Create new network</button>
           </form>
           {% endif %}
         </div>
@@ -21,7 +21,7 @@
     </div>
     <div class="col-md-8">
       <div class="card">
-        <h3>Network Resources overview
+        <h3>Networks overview
           {% if account %}
             for account {{ account.name }}
           {% endif %}
@@ -31,35 +31,26 @@
             <thead>
               <tr>
                 <th scope="col">Name</th>
-                <th scope="col">Network Resource ID</th>
-                <th scope="col">Account</th>
-                <th class="col">Type</th>
+                <th scope="col">Network ID</th>
+                <th class="no-sort"># Network Resources</th>
                 <th class="d-none">URL</th>
               </tr>
             </thead>
             <tbody>
-              {% for network_resource in network_resources: %}
+              {% for network in networks: %}
               
               <tr>
                 <td>
-                    {{ network_resource.name }}
+                  {{ network.name }}
                 </td>
                 <td>
-                    {{ network_resource.id }}
+                  {{ network.id }}
                 </td>
                 <td>
-                    {% if network_resource.owner %}
-                    <a href="/accounts/{{ network_resource.owner.id }}" title="View this account">{{ network_resource.owner.name }}</a>
-                    {% else %}
-                    PUBLIC
-                    {% endif %}
-                </td>
-                
-                <td>
-                  {{ network_resource.network_resource_type.name }}
+                  {{ network.network_resources | length }}
                 </td>
                 <td class="d-none">
-                  /networkresources/{{ network_resource.id }}
+                  /networks/{{ network.id }}
                 </td>
               </tr>
               {% endfor %} 

@@ -22,8 +22,11 @@ def eflex_opf(
     end: datetime,
     load: int,
     battery: int,
+    shunts: int,
+    transformers: int,
     buses: int,
     lines: int, 
+    external_grd: int,
     resolution: timedelta,
     belief_time: datetime,
     flex_config_has_been_deserialized: bool = False,
@@ -35,25 +38,17 @@ def eflex_opf(
     - Turn results values into beliefs and save them to db
     """
     # https://docs.sqlalchemy.org/en/13/faq/connections.html#how-do-i-use-engines-connections-sessions-with-python-multiprocessing-or-os-fork
-    # print()
-    # print("start", start)
-    # print("end", end)
-    # print("load", load)
-    # print("battery", battery)
-    # print("buses", buses)
-    # print("lines", lines)
-    # print("resolution", resolution)
-    # print("belief_time", belief_time)
-
     battery_sensors_w = []
     battery_sensors_var = []
+    for eg in external_grd:
+        battery.append(eg)
     for bt in battery:
         for sens in GenericAsset.query.get(bt).sensors:
             if sens.unit == "W":
                 battery_sensors_w.append(sens.id)
             if sens.unit == "VAr":
                 battery_sensors_var.append(sens.id)
-
+        
 
     # Closing all active connections and releasing resources
     db.engine.dispose()
@@ -62,7 +57,7 @@ def eflex_opf(
     if rq_job:
         click.echo(
             "Running Scheduling Job %s: %s, from %s to %s"
-            % (rq_job.id, battery_sensor[0], start, end)
+            % (rq_job.id, battery_sensors_w[0], start, end)
         )
     
     data_source_info = StorageScheduler.get_data_source_info()
@@ -105,7 +100,11 @@ def eflex_opf(
 
         # Creating the network buses 
         for bus in buses:
-            pp.create_bus(net, index=bus, vn_kv=NetworkResource.query.get(bus).get_attribute("vn_kv"))
+            vn = NetworkResource.query.get(bus).get_attribute("vn_kv")
+            vmax = NetworkResource.query.get(bus).get_attribute("max_vm_pu")
+            vmin = NetworkResource.query.get(bus).get_attribute("min_vm_pu")
+            print("bus", bus, vn, vmax, vmin)
+            pp.create_bus(net, index=bus, vn_kv=vn, max_vm_pu=vmax, min_vm_pu=vmin, zone=1)
 
         # Creating network lines
         for line in lines:
@@ -116,56 +115,146 @@ def eflex_opf(
             x = NetworkResource.query.get(line).get_attribute("x_ohm_per_km")
             c = NetworkResource.query.get(line).get_attribute("c_nf_per_km")
             i = NetworkResource.query.get(line).get_attribute("max_i_ka")
-            # print("line", fbus, tbus, l, r, x, c, i)
-            pp.create_line_from_parameters(net, from_bus=fbus, to_bus=tbus, length_km=l, r_ohm_per_km=r, x_ohm_per_km=x, c_nf_per_km=c, max_i_ka=i)
-
+            print("line", line, fbus, tbus, l, r, x, c, i)
+            pp.create_line_from_parameters(net, from_bus=fbus, to_bus=tbus, length_km=l, r_ohm_per_km=r, x_ohm_per_km=x, c_nf_per_km=c, max_i_ka=i,type="ol", max_loading_percent=100.0)
+        
         # Creating network loads
         if nbr_ld > 0:
             for i, ld in enumerate(load):
                 b = GenericAsset.query.get(ld).get_attribute("bus")
                 p = load_data.get("Active")[i][j]
                 q = load_data.get("Reactive")[i][j]
-                pp.create_load(net, bus=b, p_mw=p, q_mvar=q)
-                
+                print("load", ld, b, p, q)
+                pp.create_load(net, bus=b, p_mw=p, q_mvar=q, type=None)
+
         # Creating the batteries (generators)
         for bt in battery:
             b = GenericAsset.query.get(bt).get_attribute("bus")
-            pmax = GenericAsset.query.get(bt).get_attribute("p_max")
-            pmin = GenericAsset.query.get(bt).get_attribute("p_min")
+            p = GenericAsset.query.get(bt).get_attribute("p_mw")
+            vm = GenericAsset.query.get(bt).get_attribute("vm_pu")
+            qmax = GenericAsset.query.get(bt).get_attribute("max_q_mvar")
+            qmin = GenericAsset.query.get(bt).get_attribute("min_q_mvar")
+            pmax = GenericAsset.query.get(bt).get_attribute("max_p_mw")
+            pmin = GenericAsset.query.get(bt).get_attribute("min_p_mw")
             s = GenericAsset.query.get(bt).get_attribute("slack")
             s = s == 'True'
-            pp.create_gen(net, index=bt, bus=b, vm_pu=1.0, p_mw=p, min_p_mw=pmin, max_p_mw=pmax, slack=s, controllable=True)
+            print("battery", bt, b, p, vm, qmax, qmin, pmax, pmin, s)
+            if s:
+                pp.create_ext_grid(net, index=bt, bus=b, vm_pu=vm, p_mw=p, min_p_mw=pmin, max_p_mw=pmax, slack=s, max_q_mvar=qmax, min_q_mvar=qmin)
+            else:
+                pp.create_gen(net, index=bt, bus=b, vm_pu=vm, p_mw=p, min_p_mw=pmin, max_p_mw=pmax, slack=s, max_q_mvar=qmax, min_q_mvar=qmin, controllable=True)
 
         # Creating the polynomial costs
-        cp0 = [GenericAsset.query.get(battery[i]).get_attribute("cp0")
-            for i in range(nbr_bt)]
-        cp1 = [GenericAsset.query.get(battery[i]).get_attribute("cp1")
-            for i in range(nbr_bt)]
-        cp2 = [GenericAsset.query.get(battery[i]).get_attribute("cp2")
-            for i in range(nbr_bt)]
-        nbr_et = len(cp0)*['gen']
-        pp.create_poly_costs(net, elements=battery, et=nbr_et, cp0_eur=cp0, cp1_eur_per_mw=cp1, cp2_eur_per_mw2=cp2)
+        for bt in battery:
+            cp0 = GenericAsset.query.get(bt).get_attribute("cp0")
+            cp1 = GenericAsset.query.get(bt).get_attribute("cp1")
+            cp2 = GenericAsset.query.get(bt).get_attribute("cp2")
+            cq0 = GenericAsset.query.get(bt).get_attribute("cq0")
+            cq1 = GenericAsset.query.get(bt).get_attribute("cq1")
+            cq2 = GenericAsset.query.get(bt).get_attribute("cq2")
+            s = GenericAsset.query.get(bt).get_attribute("slack")
+            s = s == 'True'
+            if s:
+                et_ = 'ext_grid'
+            else: 
+                et_ = 'gen'
+            print("polynomial cost", cp0, cp1, cp2, cq0, cq1, cq2)
+            pp.create_poly_cost(net, element=bt, et=et_, cp0_eur=cp0, cp1_eur_per_mw=cp1, cp2_eur_per_mw2=cp2, cq0_eur=cq0, cq1_eur_per_mw=cq1, cq2_eur_per_mw2=cq2)
+
+        # Creating the transformers
+        for transformer in transformers:
+            hvb = NetworkResource.query.get(transformer).get_attribute("hv_bus")
+            lvb = NetworkResource.query.get(transformer).get_attribute("lv_bus")
+            sn = NetworkResource.query.get(transformer).get_attribute("sn_mva")
+            vnhv = NetworkResource.query.get(transformer).get_attribute("vn_hv_kv")
+            vnlv = NetworkResource.query.get(transformer).get_attribute("vn_lv_kv")
+            vkp = NetworkResource.query.get(transformer).get_attribute("vk_percent")
+            vkr = NetworkResource.query.get(transformer).get_attribute("vkr_percent")
+            pfe = NetworkResource.query.get(transformer).get_attribute("pfe_kw")
+            i0 = NetworkResource.query.get(transformer).get_attribute("i0_percent")           
+
+            print("transformer", transformer, hvb, lvb, sn, vnhv, vnlv, vkp, vkr, pfe, i0)
+            pp.create_transformer_from_parameters(net, hv_bus=hvb, lv_bus=lvb, sn_mva=sn, vn_hv_kv=vnhv, vn_lv_kv=vnlv, 
+                                                  vk_percent=vkp, vkr_percent=vkr, pfe_kw=pfe, i0_percent=i0)
+
+        # Creating the shunts
+        for shunt in shunts:
+            b = NetworkResource.query.get(shunt).get_attribute("bus")
+            q = NetworkResource.query.get(shunt).get_attribute("q_mvar")
+            p = NetworkResource.query.get(shunt).get_attribute("p_mw")
+            v = NetworkResource.query.get(shunt).get_attribute("vn_kv")
+            print("shunt", shunt, b, q, p, v)
+            pp.create_shunt(net, bus=b, q_mvar=q, p_mw=p, vn_kv=v)
         
+        print("\nNet:")
+        print(net)
+
+        print("\nNet Buses:")
+        print(net.bus)
+
+        print("\nNet Loads:")
+        print(net.load)
+
+        print("\nNet Generators:")
+        print(net.gen)
+
+        print("\nNet Shunt:")
+        print(net.shunt)
+
+        print("\nNet External Grid:")
+        print(net.ext_grid)
+
+        print("\nNet Lines:")
+        print(net.line)
+
+        print("\nNet Trafos:")
+        print(net.trafo)
+
+        print("\nNet Polynomial Costs:")
+        print(net.poly_cost)
+
         # Run the optimal power flow
         pp.runopp(net, numba=False)
 
-        # print(net.res_gen)
+        print("\nBus voltages after OPF:")
+        print(net.res_bus.vm_pu)
+
+        print("\nActive power generation after OPF:")
+        print(net.res_gen.p_mw)
+        print(net.res_ext_grid)
+
+        print("\nLoad shedding after OPF:")
+        print(net.res_load.p_mw)
+
+        print("\nLine loadings after OPF:")
+        print(net.res_line.loading_percent)
+
+        print(net.res_gen)
         # Output results
-        for k in range(nbr_bt):
-            p_w_results[k].append(net.res_gen.get("p_mw").values[k])
-            p_var_results[k].append(net.res_gen.get("q_mvar").values[k])
+        # Arrumar isso daqui, botar as coisas no lugar certo
+        print(len(net.gen) + len(net.ext_grid))
+        for k in range(len(net.gen) + len(net.ext_grid)):
+            if(k < len(net.gen)):
+                p_w_results[k].append(net.res_gen.get("p_mw").values[k])
+                p_var_results[k].append(net.res_gen.get("q_mvar").values[k])
+            else:
+                p_w_results[k].append(net.res_ext_grid.get("p_mw").values[k-len(net.gen)])
+                p_var_results[k].append(net.res_ext_grid.get("q_mvar").values[k-len(net.gen)])
+                
     ####################################################################################################################
 
     # Adding a the data into a data series
     bat_w = []
     bat_var = []
+
     for iter in range(nbr_bt):
         bat_w.append([])
         bat_var.append([])
+
     for iter in range(nbr_bt):
         bat_w[iter].append(initialize_series(data=p_w_results[iter], start=start, end=end, resolution=to_offset(resolution)))
         bat_var[iter].append(initialize_series(data=p_var_results[iter], start=start, end=end, resolution=to_offset(resolution)))
-        
+    
     if rq_job:
         click.echo("Job %s made schedule." % rq_job.id)
 
@@ -237,16 +326,6 @@ def eflex_pf(
     """
     # https://docs.sqlalchemy.org/en/13/faq/connections.html#how-do-i-use-engines-connections-sessions-with-python-multiprocessing-or-os-fork
     # Closing all active connections and releasing resources
-    # print()
-    # print()
-    # print("start", start)
-    # print("end", end)
-    # print("load_sensor", load)
-    # print("battery_sensor", battery)
-    # print("lines", lines)
-    # print("buses", buses)
-    # print("resolution", resolution)
-    # print("belief_time", belief_time)
 
     # for ld in load:
     #     print("teste paizinhuuuuuuu", GenericAsset.query.get(ld).sensors)
