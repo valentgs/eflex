@@ -1,6 +1,7 @@
 # E-Flex Updates
 
-
+This file documents the changes (with commit date/time) on Flexmeasures that are made to accomplish the following goals:
+- implement an OPF algorithm in which the input is done by UI and the results are shown in UI, using the base of Flexmeasures
 
 ## Version updated on August 11th, 2024, at 17:33:27.
 
@@ -17,6 +18,8 @@ A few files have been added to have this new type of resource of the electrical 
 A network resource is similar to an asset. So the existing code to create, read, update, and delete assets is used as an inspiration to create the code to create, read, update, and delete network resources. Files have been generated and other files have been modified. Also, the OPF implemented to be used through the terminal is inspired by the functions of adding a schedule. These additions and modifications are specified in the next two subsections.
 
 #### Generated Files
+
+These files are created to get information from the network resources database and display it in the UI. Some of them produce the UI HTML pages, and others are used to define the API and database operations.
 
 - flexmeasures/api/common/schemas/network_resources.py
     - class NetworkResourceIdField(fields.Integer)
@@ -44,6 +47,8 @@ A network resource is similar to an asset. So the existing code to create, read,
     - page that shows all network resources on the database
 
 #### Modified Files
+
+Each modification is briefly explained along with its file.
 
 - flexmeasures/\_\_init\_\_.py
     - imported Network Resources and its Types models
@@ -132,6 +137,8 @@ A network is composed of network resources. However, the existing code to create
 
 #### Generated Files
 
+These files are created to get information from the network's database and display it in the UI. Also, to deal with the information in the OPF UI and plot results in sensors. Some of them produce the UI HTML pages, and others are used to define the API and database operations.
+
 - flexmeasures/api/common/schemas/networks.py
     - class NetworkIdField(fields.Integer)
 - flexmeasures/api/v3_0/networks.py
@@ -164,8 +171,9 @@ A network is composed of network resources. However, the existing code to create
 - flexmeasures/ui/views/opf.py
     - created to render the OPF page
 
-
 #### Modified Files
+
+Each modification is briefly explained along with its file.
 
 - flexmeasures/\_\_init\_\_.py
     - imported the network model
