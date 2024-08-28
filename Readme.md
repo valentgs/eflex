@@ -18,8 +18,6 @@ A network resource is similar to an asset. So the existing code to create, read,
 
 #### Generated Files
 
-_DESCRIBE IT_
-
 - flexmeasures/api/common/schemas/network_resources.py
     - class NetworkResourceIdField(fields.Integer)
 - flexmeasures/api/v3_0/network_resources.py
@@ -46,8 +44,6 @@ _DESCRIBE IT_
     - page that shows all network resources on the database
 
 #### Modified Files
-
-_DESCRIBE IT_
 
 - flexmeasures/\_\_init\_\_.py
     - imported Network Resources and its Types models
@@ -84,51 +80,55 @@ _DESCRIBE IT_
 
 The following tables have been created
 
-                  List of relations
- Schema |             Name              | Type  | Owner 
---------+-------------------------------+-------+-------
- public | annotations_network_resources | table | eflex
- public | network_resource              | table | eflex
- public | network_resource_type         | table | eflex
---------+-------------------------------+-------+-------
+| Schema |             Name              | Type  | Owner |
+|--------|-------------------------------|-------|-------|
+| public | annotations_network_resources | table | eflex |
+| public | network_resource              | table | eflex |
+| public | network_resource_type         | table | eflex |
 
+The Table annotations_network_resources is defined as shown below 
 
-          Table "public.annotations_network_resources"
-       Column        |  Type   | Collation | Nullable | Default 
----------------------+---------+-----------+----------+---------
- id                  | integer |           |          | 
- network_resource_id | integer |           |          | 
- annotation_id       | integer |           |          | 
----------------------+---------+-----------+----------+---------
+|        Column       |  Type   | Collation | Nullable | Default | 
+|---------------------|---------|-----------|----------|---------|
+| id                  | integer |           |          |         | 
+| network_resource_id | integer |           |          |         |
+| annotation_id       | integer |           |          |         |
 
+The Table network_resource is defined as shown below
 
-                                            Table "public.network_resource"
-          Column          |         Type          | Collation | Nullable |                   Default                    
---------------------------+-----------------------+-----------+----------+----------------------------------------------
- id                       | integer               |           |          | nextval('network_resource_id_seq'::regclass)
- name                     | character varying(80) |           |          | 
- attributes               | json                  |           |          | 
- account_id               | integer               |           |          | 
- network_resource_type_id | integer               |           |          | 
---------------------------+-----------------------+-----------+----------+----------------------------------------------
+|          Column          |         Type          | Collation | Nullable |                   Default                    |                    
+|--------------------------|-----------------------|-----------|----------|----------------------------------------------|
+| id                       | integer               |           |          | nextval('network_resource_id_seq'::regclass) |
+| name                     | character varying(80) |           |          |                                              |
+| attributes               | json                  |           |          |                                              |
+| account_id               | integer               |           |          |                                              |
+| network_resource_type_id | integer               |           |          |                                              |
 
+The Table network_resource_type is defined as shown below
 
+|   Column    |         Type          | Collation | Nullable |                      Default                      | 
+|-------------|-----------------------|-----------|----------|---------------------------------------------------|
+| id          | integer               |           | not null | nextval('network_resource_type_id_seq'::regclass) |
+| name        | character varying(80) |           |          |                                                   |
+| description | character varying(80) |           |          |                                                   |
 
-                                      Table "public.network_resource_type"
-   Column    |         Type          | Collation | Nullable |                      Default                      
--------------+-----------------------+-----------+----------+---------------------------------------------------
- id          | integer               |           | not null | nextval('network_resource_type_id_seq'::regclass)
- name        | character varying(80) |           |          | 
- description | character varying(80) |           |          | 
-Indexes:
-    "network_resource_type_pkey" PRIMARY KEY, btree (id)
-
-
+Indexes: 
+ "network_resource_type_pkey" PRIMARY KEY, btree (id)
 
 ## Version updated on August 22th, 2024, at 15:47:27.
 
+The Network UI, the OPF UI, and more terminal functionalities have been created. A Network is composed of network resources. These functionalities are:
+- Add a network into the database (only in the UI)
+- Show a specific network or list all networks (only in the UI)
+- Update a network (only in the UI)
+- Delete a network (both in the UI and the terminal)
+- Delete a network resource (through the terminal)
+
+A few files have been added to have this set of network resources. Also, changes have been made to the database. The functionality of calculating OPF for a network has been slightly changed. For this version, the OPF can be used both on the terminal and the UI. The changes made in the code to implement the described functionalities are described in the next two subsections. 
+
 ### Changes in the code
 
+A network is composed of network resources. However, the existing code to create, read, update, and delete network resource is used as an inspiration to create the code to create, read, update, and delete networks. Files have been generated and other files have been modified. Also, the OPF implemented to be used through the UI is inspired by the logged in user page. These additions and modifications are specified in the next two subsections.
 
 #### Generated Files
 
@@ -153,8 +153,8 @@ Indexes:
 - flexmeasures/ui/templates/admin/opf.html
     - page to show the OPF configuration (network, date, and time)
 - flexmeasures/ui/templates/base.html
-    - added the network tab into the navigation bar
-    - added the opf tab into the the navigation bar
+    - added the network tab to the navigation bar
+    - added the OPF tab into the navigation bar
 - flexmeasures/ui/templates/crud/network.html
     - page to show a specific network, given by the id
 - flexmeasures/ui/templates/crud/network_new.html
@@ -162,7 +162,7 @@ Indexes:
 - flexmeasures/ui/templates/crud/networks.html
     - page that shows all networks on the database
 - flexmeasures/ui/views/opf.py
-    - created to render the opf page
+    - created to render the OPF page
 
 
 #### Modified Files
@@ -197,6 +197,79 @@ Indexes:
     - imported the network
 - flexmeasures/ui/views/\_\_init\_\_.py
     - imported opf view from views
+
+
+
+
+### Changes in the database
+
+The following tables have been created
+
+| Schema |             Name              | Type  | Owner |
+|--------|-------------------------------|-------|-------|
+| public | annotations_networks          | table | eflex |
+| public | network                       | table | eflex |
+
+The Table annotations_networks is defined as shown below 
+
+|    Column     |  Type   | Collation | Nullable |                     Default                      |
+|---------------|---------|-----------|----------|--------------------------------------------------|
+| id            | integer |           | not null | nextval('annotations_networks_id_seq'::regclass) |
+| network_id    | integer |           |          |                                                  |
+| annotation_id | integer |           |          |                                                  |
+
+Indexes:
+
+  "annotations_networks_pkey" PRIMARY KEY, btree (id)
+
+  "annotations_networks_annotation_id_key" UNIQUE CONSTRAINT, btree (annotation_id, network_id)
+
+Foreign-key constraints:
+ 
+  "annotations_networks_annotation_id_annotation_fkey" FOREIGN KEY (annotation_id) REFERENCES annotation(id)
+ 
+  "annotations_networks_id_networks_fkey" FOREIGN KEY (id) REFERENCES network(id)
+
+The Table network is defined as shown below 
+
+|      Column       |   Type    | Collation | Nullable |               Default               |
+|-------------------|-----------|-----------|----------|-------------------------------------|
+| id                | integer   |           | not null | nextval('network_id_seq'::regclass) |
+| network_resources | integer[] |           |          |                                     |
+| name              | text      |           |          |                                     |
+| account_id        | integer   |           |          |                                     |
+
+Indexes: 
+ 
+  "network_pkey" PRIMARY KEY, btree (id)
+
+Referenced by:
+ 
+  TABLE "annotations_networks" CONSTRAINT "annotations_networks_id_networks_fkey" FOREIGN KEY (id) REFERENCES network(id)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
