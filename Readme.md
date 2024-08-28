@@ -1,16 +1,20 @@
 # E-Flex Updates
 
+
+
 ## Version updated on August 11th, 2024, at 17:33:27.
 
-_DESCRIBE IT_
+The Network Resources UI and terminal functionalities have been created. A Network Resource can be, for example, a bus, a transmission line, a transformer, a shunt, etc. These functionalities are:
+- Add a network resource into the database (both from the terminal and the UI)
+- Show a specific network resource or list all network resources (only in the UI)
+- Update a network resource (only in the UI)
+- Delete a network resource (only in the UI)
 
-The Network Resources UI and terminal functionalities have been created. A Network Resource can be, for example, a bus, a transmission line, a transformer, a shunt, etc. A few files have been added to add this new type of resource of the electrical networks for flexmeasures. Also, changes in the database have been made. The changes are described in the next two subsections.
+A few files have been added to have this new type of resource of the electrical networks for flexmeasures. Also, changes have been made to the database. The functionality of calculating OPF for a network has been implemented as well. For this version, the OPF can be used only on the terminal. The changes made in the code to implement the described functionalities are described in the next two subsections. 
 
 ### Changes in the code
 
-_DESCRIBE IT_
-
-A network resource is similar to an asset. So the existing code to create, read, update, and delete assets is used as an inspiration to create the code to create, read, update, and delete network resources. Files have been generated and other files have been modified. These additions and modifications are specified in the next two subsections
+A network resource is similar to an asset. So the existing code to create, read, update, and delete assets is used as an inspiration to create the code to create, read, update, and delete network resources. Files have been generated and other files have been modified. Also, the OPF implemented to be used through the terminal is inspired by the functions of adding a schedule. These additions and modifications are specified in the next two subsections.
 
 #### Generated Files
 
@@ -75,6 +79,51 @@ _DESCRIBE IT_
     - added the option to download the data from the webpage
 - flexmeasures/utils/unit_utils.py
     - VAr unit has been defined and can be used as a unit for a sensor 
+
+### Changes in the database
+
+The following tables have been created
+
+                  List of relations
+ Schema |             Name              | Type  | Owner 
+--------+-------------------------------+-------+-------
+ public | annotations_network_resources | table | eflex
+ public | network_resource              | table | eflex
+ public | network_resource_type         | table | eflex
+--------+-------------------------------+-------+-------
+
+
+          Table "public.annotations_network_resources"
+       Column        |  Type   | Collation | Nullable | Default 
+---------------------+---------+-----------+----------+---------
+ id                  | integer |           |          | 
+ network_resource_id | integer |           |          | 
+ annotation_id       | integer |           |          | 
+---------------------+---------+-----------+----------+---------
+
+
+                                            Table "public.network_resource"
+          Column          |         Type          | Collation | Nullable |                   Default                    
+--------------------------+-----------------------+-----------+----------+----------------------------------------------
+ id                       | integer               |           |          | nextval('network_resource_id_seq'::regclass)
+ name                     | character varying(80) |           |          | 
+ attributes               | json                  |           |          | 
+ account_id               | integer               |           |          | 
+ network_resource_type_id | integer               |           |          | 
+--------------------------+-----------------------+-----------+----------+----------------------------------------------
+
+
+
+                                      Table "public.network_resource_type"
+   Column    |         Type          | Collation | Nullable |                      Default                      
+-------------+-----------------------+-----------+----------+---------------------------------------------------
+ id          | integer               |           | not null | nextval('network_resource_type_id_seq'::regclass)
+ name        | character varying(80) |           |          | 
+ description | character varying(80) |           |          | 
+Indexes:
+    "network_resource_type_pkey" PRIMARY KEY, btree (id)
+
+
 
 ## Version updated on August 22th, 2024, at 15:47:27.
 
