@@ -45,6 +45,8 @@ from flexmeasures.data.services.data_sources import get_or_create_source
 from flexmeasures.data.services.forecasting import create_forecasting_jobs
 from flexmeasures.data.services.scheduling import make_schedule, create_scheduling_job
 from flexmeasures.data.services.opf import eflex_opf, eflex_pf
+from flexmeasures.data.services.load_scheduling import eflex_load_scheduling
+from flexmeasures.data.services.flexibility import eflex_flexibility
 from flexmeasures.data.services.users import create_user
 from flexmeasures.data.models.user import Account, AccountRole, RolesAccounts
 from flexmeasures.data.models.time_series import (
@@ -1710,6 +1712,179 @@ def add_schedule_process(
         if success:
             click.secho("New schedule is stored.", **MsgStyle.SUCCESS)
 
+@create_schedule.command("for-load", cls=DeprecatedOptionsCommand)
+@with_appcontext
+@click.option(
+    "--network",
+    "network",
+    multiple=True, 
+    type=int,
+    required=True,
+    help="Network of the load schedule. Follow up with the network items' ID.",
+)
+@click.option(
+    "--start",
+    "start",
+    type=AwareDateTimeField(format="iso"),
+    required=True,
+    help="Schedule starts at this datetime. Follow up with a timezone-aware datetime in ISO 6801 format.",
+)
+@click.option(
+    "--duration",
+    "duration",
+    type=DurationField(),
+    required=True,
+    help="Durati"
+    "on of schedule, after --start. Follow up with a duration in ISO 6801 format, e.g. PT1H (1 hour) or PT45M (45 minutes).",
+)
+@click.option(
+    "--battery-id",
+    "battery",
+    multiple=True, 
+    type=int,
+    required=True,
+    help="Can be multiple battery packs. Should be a power sensor. Follow up with the sensor's ID.",
+)
+def add_schedule_load(
+    network: int,
+    battery: int, 
+    start: datetime,
+    duration: datetime
+):
+    """Create a new load scheduling for a network."""
+    lines_on_network, buses_on_network, shunts_on_network, transformers_on_network = [], [], [], []    
+    for resource in Network.query.get(network).network_resources:
+        if(NetworkResource.query.get(resource).network_resource_type_id == 1):
+            buses_on_network.append(NetworkResource.query.get(resource).id)
+        if(NetworkResource.query.get(resource).network_resource_type_id == 0):
+            lines_on_network.append(NetworkResource.query.get(resource).id)
+        if(NetworkResource.query.get(resource).network_resource_type_id == 4):
+            shunts_on_network.append(NetworkResource.query.get(resource).id)
+        if(NetworkResource.query.get(resource).network_resource_type_id == 2):
+            transformers_on_network.append(NetworkResource.query.get(resource).id)
+    
+    ext_grid = []
+    for battery_id in battery:
+        battery_asset = GenericAsset.query.get(battery_id)
+        if "external grid" in battery_asset.name.lower():
+            ext_grid.append(battery_id)
+    battery = [b for b in battery if b not in ext_grid]
+    
+    load_scheduling_kwargs = dict(
+        start         = start,
+        end           = start + duration,
+        battery       = battery,
+        lines         = lines_on_network,
+        buses         = buses_on_network,
+        shunts        = shunts_on_network,
+        transformers  = transformers_on_network,
+        external_grid = ext_grid,
+        resolution    = GenericAsset.query.get(ext_grid[0]).sensors[0].event_resolution,
+        belief_time   = server_now(),
+    )
+
+    success = eflex_load_scheduling(**load_scheduling_kwargs)
+    if success:
+        print("Load Scheduling done with success")
+        pass
+    pass
+
+
+@create_schedule.command("for-flex", cls=DeprecatedOptionsCommand)
+@with_appcontext
+@click.option(
+    "--network",
+    "network",
+    multiple=True, 
+    type=int,
+    required=True,
+    help="Network of the load schedule. Follow up with the network items' ID.",
+)
+@click.option(
+    "--start",
+    "start",
+    type=AwareDateTimeField(format="iso"),
+    required=True,
+    help="Schedule starts at this datetime. Follow up with a timezone-aware datetime in ISO 6801 format.",
+)
+@click.option(
+    "--duration",
+    "duration",
+    type=DurationField(),
+    required=True,
+    help="Durati"
+    "on of schedule, after --start. Follow up with a duration in ISO 6801 format, e.g. PT1H (1 hour) or PT45M (45 minutes).",
+)
+@click.option(
+    "--battery-id",
+    "battery",
+    multiple=True, 
+    type=int,
+    required=True,
+    help="Can be multiple battery packs. Should be a power sensor. Follow up with the sensor's ID.",
+)
+
+@click.option(
+    "--pv-id",
+    "pv",
+    multiple=True, 
+    type=int,
+    required=True,
+    help="Can be multiple pv. Should be a power sensor. Follow up with the sensor's ID.",
+)
+def add_schedule_flexibility(
+    network: int,
+    battery: int, 
+    pv: int,
+    start: datetime,
+    duration: datetime
+):
+    """Create a new flexibility scheduling for a network."""
+    lines_on_network, buses_on_network, shunts_on_network, transformers_on_network = [], [], [], []    
+    for resource in Network.query.get(network).network_resources:
+        if(NetworkResource.query.get(resource).network_resource_type_id == 1):
+            buses_on_network.append(NetworkResource.query.get(resource).id)
+        if(NetworkResource.query.get(resource).network_resource_type_id == 0):
+            lines_on_network.append(NetworkResource.query.get(resource).id)
+        if(NetworkResource.query.get(resource).network_resource_type_id == 4):
+            shunts_on_network.append(NetworkResource.query.get(resource).id)
+        if(NetworkResource.query.get(resource).network_resource_type_id == 2):
+            transformers_on_network.append(NetworkResource.query.get(resource).id)
+    
+    ext_grid = []
+    for battery_id in battery:
+        battery_asset = GenericAsset.query.get(battery_id)
+        if "external grid" in battery_asset.name.lower():
+            ext_grid.append(battery_id)
+    battery = [b for b in battery if b not in ext_grid]
+    
+    if not ext_grid:
+        res = GenericAsset.query.get(battery[0]).sensors[0].event_resolution
+    else:
+        res = GenericAsset.query.get(ext_grid[0]).sensors[0].event_resolution
+
+
+
+    load_flexibility_kwargs = dict(
+        start         = start,
+        end           = start + duration,
+        battery       = battery,
+        lines         = lines_on_network,
+        buses         = buses_on_network,
+        pvs           = pv,
+        shunts        = shunts_on_network,
+        transformers  = transformers_on_network,
+        external_grid = ext_grid,
+        resolution    = res,
+        belief_time   = server_now(),
+    )
+
+    print(load_flexibility_kwargs)
+
+    success = eflex_flexibility(**load_flexibility_kwargs)
+    if success:
+        print("Load Scheduling done with success")
+    
 
 import numpy as np
 @fm_add_data.command("opf")
@@ -1788,6 +1963,7 @@ def add_opf(
     lines_on_network = []
     buses_on_network = []
     for resource in network:
+        print(network, resource)
         if(NetworkResource.query.get(resource).network_resource_type_id == 1):
             buses_on_network.append(NetworkResource.query.get(resource).id)
         if(NetworkResource.query.get(resource).network_resource_type_id == 0):
@@ -1809,7 +1985,6 @@ def add_opf(
         print("OPF done with success")
         pass
 
-    pass
 
 
 @fm_add_data.command("pf")

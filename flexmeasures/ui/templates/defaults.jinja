@@ -45,7 +45,6 @@
         {% do navigation_bar.append(('assets', 'assets', 'Assets', '', 'list-ul'))  %}
         {% do navigation_bar.append(('users', 'users', 'Users', '', 'users')) %}
         {% do navigation_bar.append(('tasks', 'tasks', 'Tasks', '', 'tasks')) %}
-        {% do navigation_bar.append(('opf', 'opf', 'OPF', '', 'star')) %}
     {% endif %}
     {% if is_consultant or has_admin_reader_rights %}
         {% do navigation_bar.append(('accounts', 'accounts', 'Accounts', '', 'cubes')) %}

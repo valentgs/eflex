@@ -48,6 +48,8 @@ def register_at(app: Flask):
     from flexmeasures.ui.crud.networkresources import NetworkResourceCrudUI
     from flexmeasures.ui.crud.networks import NetworkCrudUI
     from flexmeasures.ui.crud.opf import RunOPFUI
+    from flexmeasures.ui.crud.loadscheduling import RunLoadSchedulingUI
+    from flexmeasures.ui.crud.flexibility import RunFlexibilityUI
     from flexmeasures.ui.views.sensors import SensorUI
 
     AssetCrudUI.register(app)
@@ -57,6 +59,8 @@ def register_at(app: Flask):
     NetworkResourceCrudUI.register(app)
     NetworkCrudUI.register(app)
     RunOPFUI.register(app)
+    RunLoadSchedulingUI.register(app)
+    RunFlexibilityUI.register(app)
 
     import flexmeasures.ui.views  # noqa: F401 this is necessary to load the views
 

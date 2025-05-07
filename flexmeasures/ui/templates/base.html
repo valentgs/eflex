@@ -60,9 +60,11 @@
               <a href="/">
                 <span class="navbar-tool-name">
                   {% if menu_logo %}
-                    <img id="navbar-logo" src="{{menu_logo}}"/>
+                    <!-- <img id="navbar-logo" src="{{menu_logo}}" style="width: 100%;"/> -->
+                    <img id="navbar-logo" src="{{ url_for('flexmeasures_ui.static', filename='images/e-flex-logo.svg') }}" style="width: 75%;"/>
                   {% else %}
-                    <img id="navbar-logo" src="https://artwork.lfenergy.org/projects/flexmeasures/horizontal/white/flexmeasures-horizontal-white.svg" alt="FlexMeasures"/>
+                    <!-- <img src="{{ url_for('static', filename='images/e-flex-logo.svg') }}" style="width: 5%;"> -->
+                    <!-- <img id="navbar-logo" src="https://artwork.lfenergy.org/projects/flexmeasures/horizontal/white/flexmeasures-horizontal-white.svg" alt="FlexMeasures"/> -->
                   {% endif %}
                 </span>
               </a>
@@ -83,25 +85,48 @@
             <ul class="nav navbar-nav d-flex">
               {% for href, id, caption, tooltip, icon in navigation_bar %}
                 {% if id == "tasks" %}
-                <li {% if id == active_page %} class="nav-item dropdown active" {% else %} class="nav-item dropdown" {% endif %}>
-                    <a class="nav-link dropdown-toggle" href="#" id="tasksDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="fa fa-tasks" aria-hidden="true"></span>
-                        Tasks
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="tasksDropdown">
-                        {% for queue in queue_names %}
-                        <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
-                            <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/tasks/0/view/jobs/{{ queue }}/started/10/1" {% endif %}>
-                                {{ queue | capitalize }}
-                            </a>
-                        </li>
-                        {% endfor %}
-                        <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
-                            <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/tasks/" {% endif %}>
-                                Overview
-                            </a>
-                        </li>
-                    </ul>
+                    <li {% if id == active_page %} class="nav-item dropdown active" {% else %} class="nav-item dropdown" {% endif %}>
+                        <!-- <a class="nav-link dropdown-toggle" href="#" id="tasksDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="fa fa-tasks" aria-hidden="true"></span>
+                            Tasks
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="tasksDropdown">
+                            {% for queue in queue_names %}
+                            <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
+                                <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/tasks/0/view/jobs/{{ queue }}/started/10/1" {% endif %}>
+                                    {{ queue | capitalize }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                            <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
+                                <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/tasks/" {% endif %}>
+                                    Overview
+                                </a>
+                            </li>
+                        </ul> -->
+                    <li {% if id == "optimization" %} class="nav-item dropdown active" {% else %} class="nav-item dropdown" {% endif %}>
+                        <a class="nav-link dropdown-toggle" href="#" id="optimizationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="fa fa-cogs" aria-hidden="true"></span>
+                            Optimization
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="optimizationDropdown">
+                            <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
+                                <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/opf" {% endif %}>
+                                    OPF
+                                </a>
+                            </li>
+                            <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
+                                <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/loadscheduling" {% endif %}>
+                                    Load Scheduling
+                                </a>
+                            </li>
+                            <li {% if current_user.has_role('anonymous') %} class="disabled" {% endif %}>
+                                <a class="dropdown-item" {% if not current_user.has_role('anonymous') %} href="/flexibility" {% endif %}>
+                                    Flexibility
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 </li>
                 {% else %}
                 <li {% if id == active_page %} class="nav-item active" {% else %} class="nav-item" {% endif %}
@@ -700,14 +725,14 @@
         <div class="footer text-center">
             <div class="container-fluid">
                 {% block copyright_notice %}
-                FlexMeasures technology is created by <a href="https://seita.nl/">Seita Energy Flexibility</a>,
+                <!-- FlexMeasures technology is created by <a href="https://seita.nl/">Seita Energy Flexibility</a>,
                 in cooperation with <a href="https://aoneeng.com/">A1 Engineering</a>
                 &copy
-                <script>var CurrentYear = new Date().getFullYear(); document.write(CurrentYear)</script>.
+                <script>var CurrentYear = new Date().getFullYear(); document.write(CurrentYear)</script>. -->
                 {% endblock copyright_notice %}
 
                 {% block about %}
-                <a href="#" data-bs-toggle="modal" data-bs-target="#About">About FlexMeasures</a>.
+                <!-- <a href="#" data-bs-toggle="modal" data-bs-target="#About">About FlexMeasures</a>. -->
                 <!-- The modal -->
                 <div class="modal fade" id="About" tabindex="-1" role="dialog" aria-labelledby="modalLabelLarge" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
@@ -774,7 +799,7 @@
                 {% endblock about %}
 
                 {% block credits %}
-                <a href="#" data-bs-toggle="modal" data-bs-target="#Credits">Credits</a>.
+                <!-- <a href="#" data-bs-toggle="modal" data-bs-target="#Credits">Credits</a>. -->
 
                 <!-- The modal -->
                 <div class="modal fade" id="Credits" tabindex="-1" role="dialog" aria-labelledby="modalLabelLarge" aria-hidden="true">
@@ -835,7 +860,8 @@
             </div>
             {% block logo %}
             <div>
-                <a href="https://flexmeasures.io/"><img src="https://artwork.lfenergy.org/projects/flexmeasures/icon/white/flexmeasures-icon-white.svg" alt="FlexMeasures" class="footer-logo"></a>
+                <img src="{{ url_for('flexmeasures_ui.static', filename='images/e-flex-logo.svg') }}" style="width: 10%;" class="footer-logo">
+                <!-- <a href="https://flexmeasures.io/"><img src="https://artwork.lfenergy.org/projects/flexmeasures/icon/white/flexmeasures-icon-white.svg" alt="FlexMeasures" class="footer-logo"></a> -->
             </div>
             {% endblock logo %}
         </div>

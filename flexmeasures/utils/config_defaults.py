@@ -84,10 +84,10 @@ class Config(object):
     FLEXMEASURES_SENTRY_CONFIG: dict = dict(traces_sample_rate=0.33)
     FLEXMEASURES_MONITORING_MAIL_RECIPIENTS: list[str] = []
 
-    FLEXMEASURES_PLATFORM_NAME: str | list[str | tuple[str, list[str]]] = "FlexMeasures"
+    FLEXMEASURES_PLATFORM_NAME: str | list[str | tuple[str, list[str]]] = "E-Flex"
     FLEXMEASURES_MODE: str = ""
     FLEXMEASURES_ALLOW_DATA_OVERWRITE: bool = False
-    FLEXMEASURES_TIMEZONE: str = "Asia/Seoul"
+    FLEXMEASURES_TIMEZONE: str = "Asia/Riyadh"
     FLEXMEASURES_HIDE_NAN_IN_UI: bool = False
     FLEXMEASURES_PUBLIC_DEMO_CREDENTIALS: tuple | None = None
     # Configuration used for entity addressing:
@@ -97,7 +97,7 @@ class Config(object):
     FLEXMEASURES_PLUGINS: list[str] | str = []  # str will be checked for commas
     FLEXMEASURES_PROFILE_REQUESTS: bool = False
     FLEXMEASURES_DB_BACKUP_PATH: str = "migrations/dumps"
-    FLEXMEASURES_MENU_LOGO_PATH: str = ""
+    FLEXMEASURES_MENU_LOGO_PATH: str = "ui/static/images/e-flex-logo.svg"
     FLEXMEASURES_EXTRA_CSS_PATH: str = ""
     FLEXMEASURES_ROOT_VIEW: str | list[str | tuple[str, list[str]]] = []
     FLEXMEASURES_MENU_LISTED_VIEWS: list[str | tuple[str, list[str]]] = [

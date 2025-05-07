@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% set active_page = "opf" %}
+{% set active_page = "loadscheduling" %}
 
-{% block title %} OPF creation {% endblock %}
+{% block title %} Load Scheduling creation {% endblock %}
 
 {% block divs %}
 
@@ -14,17 +14,12 @@
     </div>
     <div class="col-md-8 mt-4">
       <div class="card user-data-table">
-        <h2>New OPF</h2>
+        <h2>New Load Schedule</h2>
         <small>Logged-in user: {{ logged_in_user.username }}</small>
         <div class="card">
-          <form class="new-asset-form form-horizontal" method="RUN" action="/opf/run"> 
+          <form class="new-asset-form form-horizontal" method="RUN" action="/loadscheduling/run"> 
             <table class="table table-striped table-responsive">
               <tbody>
-                <h3> OPF / PF </h3>
-                <label>
-                  <input type="radio" name="PForOPF" value="OPF"> OPF &emsp;
-                  <input type="radio" name="PForOPF" value="PF"> PF 
-                </label><br>
                 <h3> Choose the network </h3>
                 {% for network in networks %}
                 <label>

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% set active_page = "flexibility" %}
+
+{% block title %} Flexibility creation {% endblock %}
+
+{% block divs %}
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-2 on-top-md">
+      <div class="header-action-button mt-3">
+      </div>
+    </div>
+    <div class="col-md-8 mt-4">
+      <div class="card user-data-table">
+        <h2>Flexibility (Schedule)</h2>
+        <small>Logged-in user: {{ logged_in_user.username }}</small>
+        <div class="card">
+          <form class="new-asset-form form-horizontal" method="RUN" action="/flexibility/run"> 
+            <table class="table table-striped table-responsive">
+              <tbody>
+                <h3> Choose the network </h3>
+                {% for network in networks %}
+                <label>
+                  <input type="radio" name="network_name" value="{{ network.name }}">
+                  {{ network.name }}
+                </label><br>
+                {% endfor %} 
+
+                <h3> Date/Time From </h3>
+                <div>
+                  <input class="form-group" type="date" id="from_day" name="from_day"> <input class="form-group" type="time" id="from_time" name="from_time">
+                </div>
+
+
+                <h3> Date/Time To <br></h3>
+                <div>
+                  <input class="form-group" type="date" id="to_day" name="to_day"> <input class="form-group" type="time" id="to_time" name="to_time"> 
+                </div>
+                <div class="col-md-6"> 
+                  <br>
+                  <input type="submit" value="Create">
+              </div>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card user-data-table">
+          <h2>Flexibility (Real Time)</h2>
+          <small>Logged-in user: {{ logged_in_user.username }}</small>
+          <div class="card">
+            <form class="new-asset-form form-horizontal" method="POST" action="/flexibility/onoff"> 
+              <table class="table table-striped table-responsive">
+                <tbody>
+                  <h3> Choose the network </h3>
+                  {% for network in networks %}
+                  <tr>
+                    <td>{{ network.name }}</td>
+                    <td>
+                      <label class="switch">
+                        <input type="checkbox" onchange="toggleNetwork('{{ network.name }}', this.checked)">
+                        <span class="slider"></span>
+                      </label>
+                    </td>
+                  </tr>
+                  </div>
+                  {% endfor %} 
+                </div>
+                </tbody>
+              </table>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  function toggleNetwork(networkName, isChecked) {
+    console.log(`Toggling network: ${networkName}, State: ${isChecked}`);
+
+    fetch('/flexibility/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ network: networkName, state: isChecked }),
+    })
+    .then(response => response.json())  // Use response.json() instead of response.text() to parse JSON directly
+    .then(data => {
+        console.log(`Server Response: Network ${data.network} is now ${data.status}`);
+    })
+    .catch(error => {
+        console.error("Fetch error:", error);
+    });
+}
+</script> 
+
+{% endblock %}
+
+<style>
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+  }
+
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 20px;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider {
+    background-color: #2196F3;
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(14px);
+  }
+</style>
+

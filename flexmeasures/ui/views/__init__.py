@@ -13,6 +13,14 @@ from flexmeasures.ui.views.opf import (  # noqa: F401  # noqa: F401
     opf_view,
 )
 
+from flexmeasures.ui.views.loadscheduling import (  # noqa: F401  # noqa: F401
+    loadscheduling_view,
+)
+
+from flexmeasures.ui.views.flexibility import (  # noqa: F401  # noqa: F401
+    flexibility_view,
+)
+
 @flexmeasures_ui.route("/docs")
 def docs_view():
     """Render the Sphinx documentation"""

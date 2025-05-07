@@ -164,7 +164,7 @@
 
     // create Map with tiles
     var assetMap = L
-        .map('mapid', { center: [{{ map_center[0] }}, {{ map_center[1] }}], zoom: 6 })
+        .map('mapid', { center: [{{ map_center[0] }}, {{ map_center[1] }}], zoom: 2 })
         .on('popupopen', function () {
             $(function () {
                 $('[data-toggle="tooltip"]').tooltip();
@@ -184,7 +184,7 @@
     {% endif %}
     {% endfor %}
     mcgLayerSupportGroup.addTo(assetMap);
-    control.addTo(assetMap);
+    // control.addTo(assetMap);
 
 </script>
 

@@ -10,9 +10,9 @@ from flexmeasures.ui.utils.view_utils import render_flexmeasures_template
 
 from flexmeasures.ui.crud.networks import get_networks_by_account
 
-@flexmeasures_ui.route("/opf", methods=["GET"])
+@flexmeasures_ui.route("/flexibility", methods=["GET"])
 @login_required
-def opf_view():
+def flexibility_view():
     """
     Basic information about the currently logged-in user.
     Plus basic actions (logout, reset pwd)
@@ -24,7 +24,8 @@ def opf_view():
     networks = get_networks_by_account(current_user.account_id)
 
     return render_flexmeasures_template(
-        "admin/opf.html",
+        "admin/flexibility.html",
         logged_in_user=current_user,
         networks=networks,
     )
+
