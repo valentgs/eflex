@@ -3,6 +3,39 @@
 This file documents the changes (with commit date/time) on Flexmeasures that are made to accomplish the following goals:
 - implement an OPF algorithm in which the input is done by UI and the results are shown in UI, using the base of Flexmeasures
 
+## Version updated on May 7th, 2025, at 17:33:27.
+
+Add UI mode selector for Load Scheduling and Load Flexibility with real-time options
+
+- Added a main UI button in the main menu to let users choose between "Load Scheduling" and "Load Flexibility"
+- In both modes, users can select the network, start date, and finish date
+- In Load Flexibility mode:
+  - Introduced additional buttons to enable real-time execution
+- Added new templates, views, and CRUD logic for both modes
+- Updated static files (CSS, logo) and base templates accordingly
+- Introduced new services for scheduling and flexibility handling
+- Included high-resolution logo and updated documentation config
+
+### Change in the code
+
+- Added new templates:
+  - `flexibility.html` and `loadscheduling.html` for the admin interface
+- Added new views:
+  - `flexmeasures/ui/views/flexibility.py` and `flexmeasures/ui/views/loadscheduling.py` for routing
+- Added new CRUD logic:
+  - `flexmeasures/ui/crud/flexibility.py` and `flexmeasures/ui/crud/loadscheduling.py` to support form handling and backend interactions
+- Modified:
+  - `login_user.html`, `opf.html`, `base.html`, `defaults.jinja`, and `new_dashboard.html` to integrate the new modes into the existing UI
+- Updated static assets:
+  - Added `e-flex-logo.svg` and high-resolution PNG logo
+  - Updated CSS (`flexmeasures.css`) for styling changes
+- Added new backend services:
+  - `flexibility.py` and `load_scheduling.py` under `flexmeasures/data/services/`
+- API additions:
+  - New endpoints for flexibility and load scheduling under `flexmeasures/api/v3_0/`
+- Other:
+  - Updated documentation config and CLI data loading script
+  - 
 ## Version updated on August 11th, 2024, at 17:33:27.
 
 The Network Resources UI and terminal functionalities have been created. A Network Resource can be, for example, a bus, a transmission line, a transformer, a shunt, etc. These functionalities are:
