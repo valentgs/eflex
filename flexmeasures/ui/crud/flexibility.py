@@ -34,6 +34,7 @@ from flexmeasures.data.services.sensors import (
     build_asset_jobs_data,
 )
 from flexmeasures.data.services.load_scheduling import eflex_load_scheduling
+from flexmeasures.data.services.flexibility import eflex_flexibility
 from datetime import datetime
 from flexmeasures.utils.time_utils import server_now
 from flexmeasures.ui.crud.networks import get_networks_by_account
@@ -66,64 +67,66 @@ class RunFlexibilityUI(FlaskView):
         
         from_datetime = datetime.strptime(from_day + " " + from_time, "%Y-%m-%d %H:%M")
         to_datetime = datetime.strptime(to_day + " " + to_time, "%Y-%m-%d %H:%M")
-        
-        print("NETWORK NAME:", network_name)
-        print("FROM:", from_datetime)
-        print("TO:", to_datetime)
 
         networks = get_networks_by_account(current_user.account_id)
         the_network = Network.query.filter_by(name=network_name).first().id
         
-        # lines_on_network, buses_on_network, shunts_on_network, transformers_on_network = [], [], [], []    
-        # for resource in Network.query.get(the_network).network_resources:
-        #     if(NetworkResource.query.get(resource).network_resource_type_id == 1):
-        #         buses_on_network.append(NetworkResource.query.get(resource).id)
-        #     if(NetworkResource.query.get(resource).network_resource_type_id == 0):
-        #         lines_on_network.append(NetworkResource.query.get(resource).id)
-        #     if(NetworkResource.query.get(resource).network_resource_type_id == 4):
-        #         shunts_on_network.append(NetworkResource.query.get(resource).id)
-        #     if(NetworkResource.query.get(resource).network_resource_type_id == 2):
-        #         transformers_on_network.append(NetworkResource.query.get(resource).id)
+        lines_on_network, buses_on_network, shunts_on_network, transformers_on_network = [], [], [], []    
+        for resource in Network.query.get(the_network).network_resources:
+            if(NetworkResource.query.get(resource).network_resource_type_id == 1):
+                buses_on_network.append(NetworkResource.query.get(resource).id)
+            if(NetworkResource.query.get(resource).network_resource_type_id == 0):
+                lines_on_network.append(NetworkResource.query.get(resource).id)
+            if(NetworkResource.query.get(resource).network_resource_type_id == 4):
+                shunts_on_network.append(NetworkResource.query.get(resource).id)
+            if(NetworkResource.query.get(resource).network_resource_type_id == 2):
+                transformers_on_network.append(NetworkResource.query.get(resource).id)
         
-        # battery = []
-        # for bat in GenericAsset.query.filter_by(generic_asset_type_id=5).all():
-        #     if bat.get_attribute("bus") in buses_on_network:
-        #         battery.append(bat.id)
-
-        # ext_grid = []
-        # for battery_id in battery:
-        #     battery_asset = GenericAsset.query.get(battery_id)
-        #     if "external grid" in battery_asset.name.lower():
-        #         ext_grid.append(battery_id)
-        # battery = [b for b in battery if b not in ext_grid]
+        battery = []
+        for bat in GenericAsset.query.filter_by(generic_asset_type_id=5).all():
+            if bat.get_attribute("bus") in buses_on_network:
+                battery.append(bat.id)
         
-        # duration = to_datetime - from_datetime
+        pvs = []
+        for pv in GenericAsset.query.filter_by(generic_asset_type_id=1).all():
+            if pv.get_attribute("bus") in buses_on_network:
+                pvs.append(pv.id)
 
-        # import pytz
-        # timezone = pytz.FixedOffset(180)  # 180 minutes = 3 hours
+        ext_grid = []
+        for battery_id in battery:
+            battery_asset = GenericAsset.query.get(battery_id)
+            if "external grid" in battery_asset.name.lower():
+                ext_grid.append(battery_id)
+        battery = [b for b in battery if b not in ext_grid]
         
-        # from_datetime = from_datetime.astimezone(timezone)
-        # to_datetime = to_datetime.astimezone(timezone)
+        duration = to_datetime - from_datetime
+
+        import pytz
+        timezone = pytz.FixedOffset(180)  # 180 minutes = 3 hours
         
-        # now_ = datetime.now()  # Example server time
-        # now = now_.astimezone(timezone)
+        from_datetime = from_datetime.astimezone(timezone)
+        to_datetime = to_datetime.astimezone(timezone)
+        
+        now_ = datetime.now()  # Example server time
+        now = now_.astimezone(timezone)
 
-        # load_scheduling_kwargs = dict(
-        #     start         = from_datetime,
-        #     end           = from_datetime + duration,
-        #     battery       = battery,
-        #     lines         = lines_on_network,
-        #     buses         = buses_on_network,
-        #     shunts        = shunts_on_network,
-        #     transformers  = transformers_on_network,
-        #     external_grid = ext_grid,
-        #     resolution    = GenericAsset.query.get(ext_grid[0]).sensors[0].event_resolution,
-        #     belief_time   = server_now(),
-        # )
+        flexibility_scheduling_kwargs = dict(
+            start         = from_datetime,
+            end           = from_datetime + duration,
+            battery       = battery,
+            pvs           = pvs,
+            lines         = lines_on_network,
+            buses         = buses_on_network,
+            shunts        = shunts_on_network,
+            transformers  = transformers_on_network,
+            external_grid = ext_grid,
+            resolution    = GenericAsset.query.get(battery[0]).sensors[0].event_resolution,
+            belief_time   = server_now(),
+        )
 
-        # success = eflex_load_scheduling(**load_scheduling_kwargs)
-        # if success:
-        #     print("Load Scheduling done with success")
+        success = eflex_flexibility(**flexibility_scheduling_kwargs)
+        if success:
+            print("Flexibility done with success")
         
         return render_flexmeasures_template(
             "admin/flexibility.html",
