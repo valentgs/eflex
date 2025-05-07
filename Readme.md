@@ -3,7 +3,7 @@
 This file documents the changes (with commit date/time) on Flexmeasures that are made to accomplish the following goals:
 - implement an OPF algorithm in which the input is done by UI and the results are shown in UI, using the base of Flexmeasures
 
-## Version updated on May 7th, 2025, at 17:33:27.
+## Version updated on May 7th, 2025, at 13:13:27.
 
 Add UI mode selector for Load Scheduling and Load Flexibility with real-time options
 
