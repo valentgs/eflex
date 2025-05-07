@@ -35,7 +35,7 @@ Add UI mode selector for Load Scheduling and Load Flexibility with real-time opt
   - New endpoints for flexibility and load scheduling under `flexmeasures/api/v3_0/`
 - Other:
   - Updated documentation config and CLI data loading script
-  - 
+
 ## Version updated on August 11th, 2024, at 17:33:27.
 
 The Network Resources UI and terminal functionalities have been created. A Network Resource can be, for example, a bus, a transmission line, a transformer, a shunt, etc. These functionalities are:
